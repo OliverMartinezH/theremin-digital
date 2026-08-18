@@ -121,5 +121,14 @@
 
 ## 4. Next Immediate Step
 
-> [!tip] Siguiente paso
-> **Phase 5.4** — Testing cross-browser manual (Chrome, Edge, Firefox), ahora que la lógica core tiene cobertura unitaria automatizada.
+> [!tip] Handoff (2026-08-18, fin de sesión)
+> **Estado:** todo commiteado y pusheado a `theremin-digital` (`master`, último commit `b24b7b6`). GitHub Pages en vivo en https://olivermartinezh.github.io/theremin-digital/ con `v1.12.0`. Link agregado al portafolio (`olivermartinezh.github.io`, commit `993e1ea`). `npm test` → 71/71 pasan.
+>
+> **Pendiente, sin decidir todavía (preguntar al usuario al retomar):**
+> - Sección de instrucciones/comandos básicos dentro de la app — el usuario lo propuso ("o no sé", tentativo) justo antes de este handoff; propuse un grupo colapsable más en el drawer (mismo patrón accordion) listando los gestos (manos tono/volumen, puño=mute, postura de acorde en modo piano, calibración). **No implementado, esperando confirmación.**
+> - Fusionar en vez de sobreescribir al correr "Calibrar mis límites" más de una vez (ver historial 2026-08-18, sección "podríamos aumentar la calibración a 2 veces") — evaluado, no implementado, esperando que el usuario confirme si lo quiere.
+> - `handRanges` (calibración de límites) captura rango horizontal (X) por mano pero no lo aplica a ningún control todavía — no existe un eje horizontal continuo en la app hoy. Queda documentado por si surge un uso futuro.
+>
+> **Descartado explícitamente (no reabrir sin nueva razón):** backend Supabase para preajustes compartidos (rompe el "sin backend" del proyecto); detección por antebrazo/pose (`PoseLandmarker`/`HolisticLandmarker`, ver historial) — doble costo de inferencia sin ganancia real sobre lo que ya hay; librería `ruview` (WiFi CSI, hardware distinto, no aplica a un stack basado en cámara).
+>
+> **Backlog más antiguo, todavía válido:** Phase 5.4 — testing cross-browser manual (Chrome, Edge, Firefox); la lógica core ya tiene cobertura unitaria automatizada, falta solo la verificación manual en navegadores reales.
