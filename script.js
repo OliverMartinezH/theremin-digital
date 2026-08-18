@@ -5,6 +5,7 @@ import {
 
 import {
   PALM_LANDMARK,
+  AUDIBLE_MIN,
   CHORDS,
   clamp01,
   yToFrequency,
@@ -24,7 +25,7 @@ import {
   AxisTracker,
 } from "./lib/theremin-core.js";
 
-const APP_VERSION = "1.11.0 (2026-08-18)";
+const APP_VERSION = "1.12.0 (2026-08-18)";
 console.log("[theremin] script.js cargado — versión:", APP_VERSION);
 
 /* ---------------------------------------------------------------------- */
@@ -312,6 +313,7 @@ const state = {
   limitsCapture: null, // { endAt, left: {minX,maxX,minY,maxY}, right: {...} } while "Calibrar mis límites" runs
   lastAnyHandSeenAt: null, // performance.now() ms, for INACTIVITY_MUTE_MS
   autoMuted: false,
+  abandonEffect: null, // { startFreq, startVolume } captured once the power-down glide begins
 };
 
 const LIMITS_CAPTURE_MS = 6000;
@@ -348,6 +350,10 @@ const FACEON_SMOOTH_FLOOR = 0.2;
 // indefinitely if the user just walks away. Short gaps are unaffected; this
 // only kicks in after a real, sustained absence of both hands.
 const INACTIVITY_MUTE_MS = 8000;
+// Between this and INACTIVITY_MUTE_MS, a "powering down" glide plays instead
+// of just holding the last note — a fun send-off rather than a silent hold
+// followed by an abrupt cut.
+const ABANDON_EFFECT_START_MS = 3000;
 
 function maybeStrikeKey() {
   const now = performance.now();
@@ -2139,9 +2145,7 @@ function updatePlayAudio(hands) {
   if (state.lastAnyHandSeenAt === null || hands.count > 0) {
     state.lastAnyHandSeenAt = now;
     state.autoMuted = false;
-  } else if (!state.autoMuted && now - state.lastAnyHandSeenAt > INACTIVITY_MUTE_MS) {
-    audio.hardMute();
-    state.autoMuted = true;
+    state.abandonEffect = null;
   }
 
   const toneLandmarks = hands[state.toneHand];
@@ -2263,6 +2267,37 @@ function updatePlayAudio(hands) {
     volumeTracker.reset();
     state.volumeFistMuted = false;
     state.fistReleasing = false;
+  }
+
+  // Nobody's there: past ABANDON_EFFECT_START_MS, override whatever the
+  // coast/sustain logic above just computed with a "powering down" glide —
+  // pitch and volume slide down together (accelerating) toward silence at
+  // INACTIVITY_MUTE_MS, instead of holding the last note and then cutting
+  // abruptly. Purely cosmetic on top of the actual mute, which still happens.
+  if (hands.count === 0 && state.lastAnyHandSeenAt !== null) {
+    const abandonedMs = now - state.lastAnyHandSeenAt;
+    if (abandonedMs >= INACTIVITY_MUTE_MS) {
+      if (!state.autoMuted) {
+        audio.hardMute();
+        state.autoMuted = true;
+      }
+    } else if (abandonedMs >= ABANDON_EFFECT_START_MS) {
+      if (!state.abandonEffect) {
+        state.abandonEffect = { startFreq: state.lastFreq, startVolume: audio.ready ? audio.handGain.gain.value : 0 };
+      }
+      const t = clamp01((abandonedMs - ABANDON_EFFECT_START_MS) / (INACTIVITY_MUTE_MS - ABANDON_EFFECT_START_MS));
+      const eased = t * t; // ease-in: lingers near the last note, then dives
+      const targetFreq = Math.max(AUDIBLE_MIN, state.abandonEffect.startFreq / 8); // ~3 octaves down
+      const glideFreq = state.abandonEffect.startFreq * Math.pow(targetFreq / state.abandonEffect.startFreq, eased);
+      const glideVolume = state.abandonEffect.startVolume * (1 - eased);
+      if (state.pianoMode) {
+        audio.tuneChord(glideFreq, state.playingChord ? getChordVoicing() : [0]);
+      } else {
+        audio.setFrequency(glideFreq);
+      }
+      audio.setVolume(glideVolume);
+      state.lastFreq = glideFreq;
+    }
   }
 
   const note = frequencyToNote(state.lastFreq);
