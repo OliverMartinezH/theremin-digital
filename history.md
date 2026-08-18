@@ -211,3 +211,11 @@
 - Botones nuevos (`.fx-preset-btn`, estilo píldora) dentro de cada mini-acordeón de efecto, arriba de los sliders; aplicar un preajuste también activa el switch del efecto (si no, sería fácil elegir un preajuste y olvidar prenderlo)
 - Verificado con Playwright: click en "Dub" pone wet=0.45/time=0.4/feedback=0.6, prende el switch, y persiste en `theremin_effects` — todo correcto
 - `APP_VERSION` a `1.10.0 (2026-08-18)`; cache-busting a `?v=20260818z3`
+
+## 2026-08-18 — Bug: quedaba sonando un tono al volver a la pantalla de setup
+
+- Reportado: sin tocar nada quedaba sonando un pitido en la pantalla de inicio
+- Causa: los osciladores de Web Audio corren de forma continua sin importar qué pantalla esté activa — solo `updatePlayAudio()` (que corre exclusivamente en la pantalla "play") actualiza tono/volumen. El botón nuevo "🎯 Volver a calibrar manos" llama `showScreen("setup")` pero nunca silenciaba el audio, así que lo que sonara en el instante justo antes de tocarlo quedaba sonando indefinidamente (nada volvía a tocar `handGain` una vez fuera de "play")
+- Fix: `showScreen()` corta el audio (`audio.hardMute()`, sin fade — el usuario ya no está tocando activamente) cada vez que se sale de la pantalla "play" hacia cualquier otra, sin importar por qué botón/camino se llegó ahí — más robusto que parchear solo el botón de recalibrar
+- Verificado con Playwright: ciclos rápidos play↔setup vía el botón de recalibrar, sin errores (71/71 tests siguen pasando, sin cambios en la lógica pura)
+- `APP_VERSION` a `1.10.1 (2026-08-18)`; cache-busting a `?v=20260818z4`

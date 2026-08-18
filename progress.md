@@ -112,6 +112,8 @@
 * Detección de orientación de mano (`palmFaceOn()`, desde `worldLandmarks` 3D): atenúa el suavizado de posición y avisa visualmente (esqueleto ámbar) cuando una mano se acerca a quedar perpendicular a la cámara, el punto débil de tracking reportado.
 * Presets como archivo: botones "Exportar"/"Importar" en el grupo Preajustes, descarga/carga un JSON — complementa el guardado automático en localStorage con algo portátil entre navegadores/equipos.
 * Preajustes conocidos por efecto (`FX_PRESETS`): Slapback/Clásico/Dub (Eco), Sutil/Clásico/Intenso (Flanger), Habitación/Sala/Catedral (Reverb) — valores investigados y mapeados a los rangos de sliders existentes.
+* Bug corregido: volver a la pantalla de setup (botón "Volver a calibrar manos") dejaba un tono sonando indefinidamente — `showScreen()` ahora silencia el audio (`hardMute()`) al salir de "play" hacia cualquier otra pantalla.
+* Publicado: GitHub Pages en https://olivermartinezh.github.io/theremin-digital/ y link agregado al portafolio (olivermartinezh.github.io), con capturas propias claro/oscuro.
 
 ---
 

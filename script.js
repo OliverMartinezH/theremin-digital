@@ -24,7 +24,7 @@ import {
   AxisTracker,
 } from "./lib/theremin-core.js";
 
-const APP_VERSION = "1.10.0 (2026-08-18)";
+const APP_VERSION = "1.10.1 (2026-08-18)";
 console.log("[theremin] script.js cargado — versión:", APP_VERSION);
 
 /* ---------------------------------------------------------------------- */
@@ -403,6 +403,14 @@ if (el.appVersionBadge) {
 /* ---------------------------------------------------------------------- */
 
 function showScreen(name) {
+  // The oscillators run continuously regardless of which screen is shown —
+  // leaving "play" (e.g. via "Volver a calibrar manos") without this left
+  // whatever tone/volume was last set sounding forever, since updatePlayAudio
+  // (the only thing that ever changes it) stops being called once off that
+  // screen. Hard-cut (no fade) since the user isn't actively playing anymore.
+  if (state.activeScreen === "play" && name !== "play") {
+    audio.hardMute();
+  }
   Object.values(screens).forEach((s) => s.classList.remove("active"));
   screens[name].classList.add("active");
   state.activeScreen = name;
