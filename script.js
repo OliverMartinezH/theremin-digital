@@ -24,7 +24,7 @@ import {
   AxisTracker,
 } from "./lib/theremin-core.js";
 
-const APP_VERSION = "1.10.1 (2026-08-18)";
+const APP_VERSION = "1.11.0 (2026-08-18)";
 console.log("[theremin] script.js cargado — versión:", APP_VERSION);
 
 /* ---------------------------------------------------------------------- */
@@ -310,6 +310,8 @@ const state = {
   lastStrikeTime: 0, // performance.now() ms, for debouncing piano-mode strikeKey()
   calibration: { heldMs: 0, done: false, lastFrameTime: null }, // setup-screen hand calibration (informational only)
   limitsCapture: null, // { endAt, left: {minX,maxX,minY,maxY}, right: {...} } while "Calibrar mis límites" runs
+  lastAnyHandSeenAt: null, // performance.now() ms, for INACTIVITY_MUTE_MS
+  autoMuted: false,
 };
 
 const LIMITS_CAPTURE_MS = 6000;
@@ -339,6 +341,13 @@ const FACEON_WARN_THRESHOLD = 0.35;
 // (edge-on) orientation, position still updates a little rather than
 // freezing outright, which would itself feel like a bug.
 const FACEON_SMOOTH_FLOOR = 0.2;
+
+// If NEITHER hand has been seen for this long on the play screen, mute —
+// otherwise whatever tone/volume was last sustained (e.g. the volume hand's
+// "keep last value" behavior when it briefly leaves frame) could drone on
+// indefinitely if the user just walks away. Short gaps are unaffected; this
+// only kicks in after a real, sustained absence of both hands.
+const INACTIVITY_MUTE_MS = 8000;
 
 function maybeStrikeKey() {
   const now = performance.now();
@@ -410,6 +419,8 @@ function showScreen(name) {
   // screen. Hard-cut (no fade) since the user isn't actively playing anymore.
   if (state.activeScreen === "play" && name !== "play") {
     audio.hardMute();
+    state.lastAnyHandSeenAt = null; // fresh inactivity timer next time "play" starts
+    state.autoMuted = false;
   }
   Object.values(screens).forEach((s) => s.classList.remove("active"));
   screens[name].classList.add("active");
@@ -2123,6 +2134,15 @@ function axisOpts(smoothing, faceOn = 1) {
 
 function updatePlayAudio(hands) {
   if (!state.toneHand) return;
+
+  const now = performance.now();
+  if (state.lastAnyHandSeenAt === null || hands.count > 0) {
+    state.lastAnyHandSeenAt = now;
+    state.autoMuted = false;
+  } else if (!state.autoMuted && now - state.lastAnyHandSeenAt > INACTIVITY_MUTE_MS) {
+    audio.hardMute();
+    state.autoMuted = true;
+  }
 
   const toneLandmarks = hands[state.toneHand];
   const volumeLandmarks = hands[otherHand(state.toneHand)];
