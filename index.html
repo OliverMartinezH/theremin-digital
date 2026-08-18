@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Theremin Digital</title>
+<link rel="stylesheet" href="style.css?v=20260818z3" />
+</head>
+<body>
+
+  <header class="topbar">
+    <h1>🎛️ Theremin Digital <span class="app-version-badge" id="app-version-badge"></span></h1>
+    <div class="topbar-actions">
+      <button id="btn-theme" class="btn btn-icon" title="Cambiar tema">🌙</button>
+    </div>
+  </header>
+
+  <!-- LOADING -->
+  <section id="screen-loading" class="screen active">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p id="loading-text">Cargando modelo de detección de manos…</p>
+    </div>
+  </section>
+
+  <!-- ERROR -->
+  <section id="screen-error" class="screen">
+    <div class="error-box">
+      <p class="error-icon">⚠️</p>
+      <h2 id="error-title">No se pudo acceder a la cámara</h2>
+      <p id="error-message">Verifica los permisos del navegador e inténtalo de nuevo.</p>
+      <button id="btn-retry" class="btn btn-primary">Reintentar</button>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="screen-setup" class="screen">
+    <div class="setup-layout">
+      <div class="camera-wrap" id="setup-camera-wrap">
+        <video id="video-setup" autoplay playsinline muted></video>
+        <canvas id="overlay-setup"></canvas>
+        <div class="label-layer" id="label-layer-setup"></div>
+      </div>
+      <div class="setup-panel">
+        <h2>Configura tu Theremin</h2>
+        <p class="hint">Elige qué mano controla el <strong>tono</strong> y cuál el <strong>volumen</strong>, según tu propio punto de vista.</p>
+
+        <div class="hands-swap">
+          <div class="hand-slot" id="slot-left">
+            <img src="assets/mano-izq.png" alt="Mano izquierda" class="hand-img" />
+            <div class="role-label role-tone" id="label-left">
+              <span class="role-icon">🎵</span>
+              <span class="role-text">TONO</span>
+            </div>
+          </div>
+
+          <button id="btn-swap" class="btn-swap" title="Intercambiar tono y volumen">⇄</button>
+
+          <div class="hand-slot" id="slot-right">
+            <img src="assets/mano-der.png" alt="Mano derecha" class="hand-img" />
+            <div class="role-label role-volume" id="label-right">
+              <span class="role-icon">🔊</span>
+              <span class="role-text">VOLUMEN</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="hint small" id="setup-detect-status">Buscando manos…</p>
+        <div class="calib-progress" id="calib-progress" aria-hidden="true">
+          <div class="calib-progress-fill" id="calib-progress-fill"></div>
+        </div>
+
+        <button id="btn-calibrate-limits" class="btn btn-ghost">🎯 Calibrar mis límites</button>
+        <p class="hint small">Mueve ambas manos a tus propios límites cómodos (arriba, abajo, cerca, lejos) — no a las esquinas de la pantalla. Opcional.</p>
+
+        <button id="btn-setup-config" class="btn btn-ghost btn-large">⚙️ Opciones</button>
+
+        <button id="btn-start" class="btn btn-primary btn-large" disabled>Comenzar a tocar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONFIG DRAWER -->
+  <div id="config-drawer-overlay" class="drawer-overlay hidden"></div>
+  <aside id="config-drawer" class="config-drawer">
+    <div id="drawer-resize-handle" class="drawer-resize-handle" title="Arrastrar para ajustar ancho" aria-label="Redimensionar panel"></div>
+    <div class="drawer-header">
+      <h2>Configuración</h2>
+      <button id="btn-drawer-close" class="btn btn-icon" title="Cerrar">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p class="hint">Ajusta cómo responden tus gestos. Los cambios se aplican en vivo.</p>
+
+      <div class="config-group">
+        <h3>🎵 Tono</h3>
+
+        <div class="config-row">
+          <label for="cfg-tone-smoothing">Suavizado</label>
+          <input type="range" id="cfg-tone-smoothing" min="0.05" max="0.9" step="0.05" />
+          <span class="readout" id="cfg-tone-smoothing-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-min-freq">Frecuencia mínima</label>
+          <input type="range" id="cfg-min-freq" min="40" max="1980" step="1" />
+          <span class="readout" id="cfg-min-freq-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-max-freq">Frecuencia máxima</label>
+          <input type="range" id="cfg-max-freq" min="60" max="2000" step="1" />
+          <span class="readout" id="cfg-max-freq-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-invert-tone">Invertir eje Y</label>
+          <button class="toggle" id="cfg-invert-tone" role="switch" aria-checked="false">
+            <span class="toggle-knob"></span>
+          </button>
+          <span class="readout" id="cfg-invert-tone-val">Arriba = agudo</span>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>🔊 Volumen</h3>
+
+        <div class="config-row">
+          <label for="cfg-volume-smoothing">Suavizado</label>
+          <input type="range" id="cfg-volume-smoothing" min="0.05" max="0.9" step="0.05" />
+          <span class="readout" id="cfg-volume-smoothing-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-invert-volume">Invertir eje Y</label>
+          <button class="toggle" id="cfg-invert-volume" role="switch" aria-checked="false">
+            <span class="toggle-knob"></span>
+          </button>
+          <span class="readout" id="cfg-invert-volume-val">Arriba = alto</span>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>⚡ Anticipación (inercia)</h3>
+        <p class="hint small">Anticipa tono y volumen según la velocidad de la mano: si subes a velocidad constante, la nota ya sube con inercia; al frenar, se asienta suave.</p>
+
+        <div class="config-row">
+          <label for="cfg-anticipation-enabled">Habilitar modo</label>
+          <button class="toggle" id="cfg-anticipation-enabled" role="switch" aria-checked="true">
+            <span class="toggle-knob"></span>
+          </button>
+          <span class="readout" id="cfg-anticipation-enabled-val">Activo</span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-anticipation">Anticipación</label>
+          <input type="range" id="cfg-anticipation" min="0" max="0.5" step="0.01" />
+          <span class="readout" id="cfg-anticipation-val"></span>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>🎛️ Modo de juego</h3>
+
+        <div class="config-row">
+          <label for="btn-mode">Modo</label>
+          <button id="btn-mode" class="btn btn-mode-toggle" aria-pressed="false">📻 Theremin</button>
+          <span class="readout" id="mode-val">Theremin</span>
+        </div>
+
+        <div class="config-row">
+          <label for="waveform-select">Onda</label>
+          <select id="waveform-select">
+            <option value="sine">Seno</option>
+            <option value="square">Cuadrada</option>
+            <option value="sawtooth">Sierra</option>
+            <option value="triangle">Triangular</option>
+          </select>
+        </div>
+
+        <div class="config-row config-row-chords" id="chord-control">
+          <label>Acorde</label>
+          <div class="chord-buttons" id="chord-buttons">
+            <button class="chord-btn" data-chord="mayor">Mayor</button>
+            <button class="chord-btn" data-chord="menor">Menor</button>
+            <button class="chord-btn" data-chord="septima">7ª</button>
+            <button class="chord-btn" data-chord="sus4">Sus4</button>
+            <button class="chord-btn" data-chord="quinta">Quinta</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>✨ Efectos</h3>
+        <p class="hint small">Se aplican al sonido. Cambios en vivo, sin cortes.</p>
+
+        <div class="fx-item" data-fx="echo">
+          <div class="fx-item-row">
+            <button type="button" class="fx-header" aria-expanded="false" aria-controls="fx-echo-body">
+              <span class="fx-chevron">▾</span>
+              <span class="fx-name">Eco (delay)</span>
+            </button>
+            <button class="toggle" id="fx-echo-enabled" role="switch" aria-checked="false" title="Activar/desactivar Eco">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="fx-body" id="fx-echo-body">
+            <div class="fx-presets">
+              <button type="button" class="fx-preset-btn" data-fx="echo" data-preset="slapback">Slapback</button>
+              <button type="button" class="fx-preset-btn" data-fx="echo" data-preset="clasico">Clásico</button>
+              <button type="button" class="fx-preset-btn" data-fx="echo" data-preset="dub">Dub</button>
+            </div>
+            <div class="config-row">
+              <label for="fx-echo-wet">Mezcla</label>
+              <input type="range" id="fx-echo-wet" min="0" max="0.9" step="0.05" />
+              <span class="readout" id="fx-echo-wet-val"></span>
+            </div>
+            <div class="config-row">
+              <label for="fx-echo-time">Tiempo</label>
+              <input type="range" id="fx-echo-time" min="0.1" max="0.8" step="0.01" />
+              <span class="readout" id="fx-echo-time-val"></span>
+            </div>
+            <div class="config-row">
+              <label for="fx-echo-feedback">Feedback</label>
+              <input type="range" id="fx-echo-feedback" min="0" max="0.7" step="0.01" />
+              <span class="readout" id="fx-echo-feedback-val"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fx-item" data-fx="flanger">
+          <div class="fx-item-row">
+            <button type="button" class="fx-header" aria-expanded="false" aria-controls="fx-flanger-body">
+              <span class="fx-chevron">▾</span>
+              <span class="fx-name">Flanger</span>
+            </button>
+            <button class="toggle" id="fx-flanger-enabled" role="switch" aria-checked="false" title="Activar/desactivar Flanger">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="fx-body" id="fx-flanger-body">
+            <div class="fx-presets">
+              <button type="button" class="fx-preset-btn" data-fx="flanger" data-preset="sutil">Sutil</button>
+              <button type="button" class="fx-preset-btn" data-fx="flanger" data-preset="clasico">Clásico</button>
+              <button type="button" class="fx-preset-btn" data-fx="flanger" data-preset="intenso">Intenso</button>
+            </div>
+            <div class="config-row">
+              <label for="fx-flanger-wet">Mezcla</label>
+              <input type="range" id="fx-flanger-wet" min="0" max="0.9" step="0.05" />
+              <span class="readout" id="fx-flanger-wet-val"></span>
+            </div>
+            <div class="config-row">
+              <label for="fx-flanger-rate">Velocidad</label>
+              <input type="range" id="fx-flanger-rate" min="0.1" max="4" step="0.1" />
+              <span class="readout" id="fx-flanger-rate-val"></span>
+            </div>
+            <div class="config-row">
+              <label for="fx-flanger-depth">Profundidad</label>
+              <input type="range" id="fx-flanger-depth" min="0.5" max="5" step="0.1" />
+              <span class="readout" id="fx-flanger-depth-val"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fx-item" data-fx="reverb">
+          <div class="fx-item-row">
+            <button type="button" class="fx-header" aria-expanded="false" aria-controls="fx-reverb-body">
+              <span class="fx-chevron">▾</span>
+              <span class="fx-name">Reverb</span>
+            </button>
+            <button class="toggle" id="fx-reverb-enabled" role="switch" aria-checked="false" title="Activar/desactivar Reverb">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="fx-body" id="fx-reverb-body">
+            <div class="fx-presets">
+              <button type="button" class="fx-preset-btn" data-fx="reverb" data-preset="habitacion">Habitación</button>
+              <button type="button" class="fx-preset-btn" data-fx="reverb" data-preset="sala">Sala</button>
+              <button type="button" class="fx-preset-btn" data-fx="reverb" data-preset="catedral">Catedral</button>
+            </div>
+            <div class="config-row">
+              <label for="fx-reverb-wet">Mezcla</label>
+              <input type="range" id="fx-reverb-wet" min="0" max="0.9" step="0.05" />
+              <span class="readout" id="fx-reverb-wet-val"></span>
+            </div>
+            <div class="config-row">
+              <label for="fx-reverb-size">Tamaño</label>
+              <input type="range" id="fx-reverb-size" min="0.5" max="4" step="0.1" />
+              <span class="readout" id="fx-reverb-size-val"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>✊ Gesto de puño (silenciar)</h3>
+
+        <div class="config-row">
+          <label for="cfg-fist-enabled">Habilitar gesto</label>
+          <button class="toggle" id="cfg-fist-enabled" role="switch" aria-checked="true">
+            <span class="toggle-knob"></span>
+          </button>
+          <span class="readout" id="cfg-fist-enabled-val">Activo</span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-fist-on">Umbral cerrar puño</label>
+          <input type="range" id="cfg-fist-on" min="0.4" max="0.95" step="0.01" />
+          <span class="readout" id="cfg-fist-on-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-fist-off">Umbral abrir puño</label>
+          <input type="range" id="cfg-fist-off" min="0.2" max="0.8" step="0.01" />
+          <span class="readout" id="cfg-fist-off-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-fist-snap">Velocidad de corte</label>
+          <input type="range" id="cfg-fist-snap" min="0.5" max="8" step="0.1" />
+          <span class="readout" id="cfg-fist-snap-val"></span>
+        </div>
+
+        <div class="config-row">
+          <label for="cfg-fist-curlsmooth">Suavizado de velocidad</label>
+          <input type="range" id="cfg-fist-curlsmooth" min="0.1" max="0.9" step="0.05" />
+          <span class="readout" id="cfg-fist-curlsmooth-val"></span>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>💾 Preajustes</h3>
+        <p class="hint small">Guarda la configuración actual (tono, volumen, efectos, instrumento, modo, mano) con un nombre y cárgala cuando quieras.</p>
+
+        <div class="config-row config-row-presets">
+          <input type="text" id="preset-name-input" placeholder="Nombre del preajuste" maxlength="40" />
+          <button id="btn-preset-save" class="btn btn-ghost" title="Guardar configuración actual">💾 Guardar</button>
+        </div>
+
+        <div class="config-row config-row-presets">
+          <button id="btn-preset-export" class="btn btn-ghost" title="Descargar todos los preajustes como archivo">⬇️ Exportar</button>
+          <button id="btn-preset-import" class="btn btn-ghost" title="Cargar preajustes desde un archivo">⬆️ Importar</button>
+          <input type="file" id="preset-import-input" accept="application/json,.json" hidden />
+        </div>
+
+        <ul class="preset-list" id="preset-list"></ul>
+      </div>
+
+      <div class="config-group">
+        <h3>📜 Licencia</h3>
+        <div class="about-legal-scroll">
+          <p>
+            This program is free software: you can redistribute it and/or
+            modify it under the terms of the GNU General Public License as
+            published by the Free Software Foundation, either version 3 of
+            the License, or (at your option) any later version.
+          </p>
+          <p>
+            This program is distributed in the hope that it will be useful,
+            but WITHOUT ANY WARRANTY; without even the implied warranty of
+            MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+            General Public License for more details.
+          </p>
+          <p>
+            You should have received a copy of the GNU General Public
+            License along with this program. If not, see
+            <a
+              href="https://www.gnu.org/licenses/gpl-3.0.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              https://www.gnu.org/licenses/gpl-3.0.html
+            </a>.
+          </p>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <h3>ℹ️ Acerca de</h3>
+        <p class="hint small" id="app-version"></p>
+        <a
+          href="https://link.mercadopago.cl/olivermartinez"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="donate-link"
+        >
+          🐷 Dona en Mercado Pago
+        </a>
+        <div class="about-license">
+          <p class="about-description">
+            Theremin virtual con cámara: detecta tus manos con MediaPipe y las
+            convierte en sonido con la Web Audio API. Sin backend, sin
+            instalación.
+          </p>
+          <p class="about-copyright">Copyright © 2026 Oliver Martinez</p>
+          <p class="about-license-notice">
+            Este programa es software libre bajo la licencia GNU GPLv3.
+          </p>
+        </div>
+      </div>
+
+      <div class="config-actions">
+        <button id="btn-config-reset" class="btn btn-ghost">Restablecer valores</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- PLAY -->
+  <section id="screen-play" class="screen">
+    <div class="play-layout">
+      <div class="camera-wrap" id="play-camera-wrap">
+        <video id="video-play" autoplay playsinline muted></video>
+        <canvas id="overlay-play"></canvas>
+        <div class="label-layer" id="label-layer-play"></div>
+        <div class="note-readout" id="note-readout">— Hz</div>
+      </div>
+
+      <div class="viz-panel">
+        <canvas id="viz-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <div class="control">
+        <label for="instrument-select">Instrumento</label>
+        <select id="instrument-select">
+          <option value="theremin">Theremin clásico</option>
+          <option value="otamatone">Otamatone</option>
+          <option value="synthlead">Synth Lead</option>
+          <option value="organ">Órgano</option>
+          <option value="strings">Cuerdas</option>
+          <option value="choir">Coro de voces</option>
+          <option value="flauta">Flauta</option>
+          <option value="campana">Campana</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+
+      <div class="control control-register">
+        <label>Registro</label>
+        <div class="register-bars" id="register-bars">
+          <button class="register-bar" data-register="grave" title="Grave">
+            <span class="bar-fill"></span>
+            <span class="bar-label">Grave</span>
+          </button>
+          <button class="register-bar" data-register="grave-normal" title="Grave + Normal (rango ampliado)">
+            <span class="bar-fill"></span>
+            <span class="bar-label">Grave-Normal</span>
+          </button>
+          <button class="register-bar" data-register="normal" title="Normal">
+            <span class="bar-fill"></span>
+            <span class="bar-label">Normal</span>
+          </button>
+          <button class="register-bar" data-register="normal-agudo" title="Normal + Agudo (rango ampliado)">
+            <span class="bar-fill"></span>
+            <span class="bar-label">Normal-Agudo</span>
+          </button>
+          <button class="register-bar" data-register="agudo" title="Agudo">
+            <span class="bar-fill"></span>
+            <span class="bar-label">Agudo</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="control">
+        <label for="max-volume">Volumen máx.</label>
+        <input type="range" id="max-volume" min="0" max="1" step="0.01" value="0.5" />
+      </div>
+
+      <div class="control">
+        <label for="sens-pos">Posición</label>
+        <input type="range" id="sens-pos" min="0.1" max="2" step="0.05" value="1" />
+      </div>
+
+      <div class="control">
+        <label for="sens-resp">Respuesta</label>
+        <input type="range" id="sens-resp" min="0.1" max="2" step="0.05" value="1" />
+      </div>
+
+      <button id="btn-mute" class="btn btn-icon" aria-pressed="false" title="Silenciar">🔊</button>
+
+      <button id="btn-reconfig-bar" class="btn btn-icon" title="Intercambiar mano de tono">🤚</button>
+
+      <button id="btn-recalibrate" class="btn btn-icon" title="Volver a calibrar manos">🎯</button>
+
+      <button id="btn-open-config" class="btn btn-icon" title="Configuración avanzada">⚙️</button>
+
+      <div class="status-pill" id="hands-status">Manos: 0/2</div>
+    </div>
+  </section>
+
+  <script type="module" src="script.js?v=20260818z3"></script>
+</body>
+</html>

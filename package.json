@@ -1,0 +1,10 @@
+{
+  "name": "theremin-digital",
+  "version": "1.2.6",
+  "private": true,
+  "description": "Theremin virtual con cámara (MediaPipe) y Web Audio API. Sin backend, sin build step.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
