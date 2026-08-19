@@ -25,7 +25,7 @@ import {
   AxisTracker,
 } from "./lib/theremin-core.js";
 
-const APP_VERSION = "1.12.0 (2026-08-18)";
+const APP_VERSION = "1.13.0 (2026-08-18)";
 console.log("[theremin] script.js cargado — versión:", APP_VERSION);
 
 /* ---------------------------------------------------------------------- */

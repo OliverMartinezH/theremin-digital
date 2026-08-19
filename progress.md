@@ -44,6 +44,7 @@
 - [x] **3.6.** Barra de controles (instrumento, registro didáctico, volumen, mute, sensibilidad, intercambio de mano de tono)
 - [x] **3.7.** Persistencia de todas las configuraciones en localStorage
 - [x] **3.8.** Drawer: grupo "Modo de juego" (modo, onda, acorde) + grupo "Efectos" (eco, flanger, reverb)
+- [x] **3.9.** Drawer: grupo "🖐️ Instrucciones" con los gestos básicos (tono/volumen, puño, acorde en piano, auto-mute, calibración)
 
 ### Phase 4: Visualización
 - [x] **4.1.** Canvas generativo reactivo al AnalyserNode
@@ -116,16 +117,16 @@
 * Publicado: GitHub Pages en https://olivermartinezh.github.io/theremin-digital/ y link agregado al portafolio (olivermartinezh.github.io), con capturas propias claro/oscuro.
 * Silenciado automático por inactividad: si no se detecta ninguna mano por 8s en la pantalla de juego, se silencia (evita que quede sonando el último valor sostenido si el usuario se aleja).
 * Apagado por abandono "divertido": desde el segundo 3 sin manos, tono y volumen bajan juntos con un glide ease-in (~3 octavas) hasta el silencio a los 8s, en vez de sostener y cortar de golpe.
+* Grupo "🖐️ Instrucciones" agregado al drawer (primero, mismo patrón de acordeón): lista de gestos básicos — mano de tono/volumen + botón ⇄, puño = mute, postura de acorde en modo piano, auto-mute por inactividad, "Calibrar mis límites".
 
 ---
 
 ## 4. Next Immediate Step
 
 > [!tip] Handoff (2026-08-18, fin de sesión)
-> **Estado:** todo commiteado y pusheado a `theremin-digital` (`master`, último commit `b24b7b6`). GitHub Pages en vivo en https://olivermartinezh.github.io/theremin-digital/ con `v1.12.0`. Link agregado al portafolio (`olivermartinezh.github.io`, commit `993e1ea`). `npm test` → 71/71 pasan.
+> **Estado:** grupo "🖐️ Instrucciones" implementado en el drawer (`APP_VERSION` → `1.13.0`, cache-busting `?v=20260818z7`); pendiente de commit/push. `npm test` → 71/71 pasan. GitHub Pages en vivo en https://olivermartinezh.github.io/theremin-digital/ (aún en `v1.12.0` hasta el próximo push). Link agregado al portafolio (`olivermartinezh.github.io`, commit `993e1ea`).
 >
 > **Pendiente, sin decidir todavía (preguntar al usuario al retomar):**
-> - Sección de instrucciones/comandos básicos dentro de la app — el usuario lo propuso ("o no sé", tentativo) justo antes de este handoff; propuse un grupo colapsable más en el drawer (mismo patrón accordion) listando los gestos (manos tono/volumen, puño=mute, postura de acorde en modo piano, calibración). **No implementado, esperando confirmación.**
 > - Fusionar en vez de sobreescribir al correr "Calibrar mis límites" más de una vez (ver historial 2026-08-18, sección "podríamos aumentar la calibración a 2 veces") — evaluado, no implementado, esperando que el usuario confirme si lo quiere.
 > - `handRanges` (calibración de límites) captura rango horizontal (X) por mano pero no lo aplica a ningún control todavía — no existe un eje horizontal continuo en la app hoy. Queda documentado por si surge un uso futuro.
 >

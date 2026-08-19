@@ -237,3 +237,11 @@
 - Implementado como una sobreescritura al final de `updatePlayAudio()` (después de la lógica normal de tono/volumen, antes de actualizar el readout) — así no compite con el coast/sustain existente cuando ambas manos faltan, y respeta modo piano (`tuneChord` con la voz/acorde que estuviera sonando) vs. theremin normal (`setFrequency`)
 - Verificado con Playwright leyendo el propio indicador de Hz en pantalla a lo largo del tiempo: 130.8Hz (t=1s, antes del umbral) → 120.2Hz (t=4s) → 49.9Hz (t=6.5s) → 20.1Hz silenciado (t=9s, ya pasado el mute) — sin errores; 71/71 tests siguen pasando (cambio solo en `script.js`, sin lógica pura nueva)
 - `APP_VERSION` a `1.12.0 (2026-08-18)`; cache-busting a `?v=20260818z6`
+
+## 2026-08-18 — Sección de instrucciones en el drawer
+
+- Pendiente del handoff anterior (propuesto tentativamente, "o no sé"): agregar dentro de la app un resumen de los gestos básicos, para no depender de que el usuario los recuerde o los deduzca
+- Nuevo grupo "🖐️ Instrucciones" en el drawer de configuración, primero en el orden (antes de "🎵 Tono") — mismo patrón de acordeón que el resto de los grupos (`setupDrawerAccordions()` ya envuelve cualquier `.config-group` con `<h3>`, sin cambios de JS necesarios), con una lista de 5 puntos: mano de tono/volumen + botón ⇄, puño = mute, postura de acorde en modo piano (dedos separados), auto-mute por inactividad, y el botón "Calibrar mis límites"
+- CSS nuevo (`.instructions-list`) reutiliza las variables de tema existentes (`--text-dim`, `--text`), sin agregar paleta nueva
+- `npm test` → 71/71 pasan (sin cambios en `lib/`, solo HTML/CSS + versión)
+- `APP_VERSION` a `1.13.0 (2026-08-18)`; cache-busting a `?v=20260818z7`
